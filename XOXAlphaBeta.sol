@@ -146,11 +146,6 @@ contract TicTacToe {
 
         nextPlayer(game);
 
-        if (game.gameType == GameType.PlayerVsComputer) {
-            makeMoveY(game, game.board);
-            return (true, "computer played, play again");
-        }
-
         return (true, "");
     }
 
@@ -260,69 +255,28 @@ contract TicTacToe {
         }
     }
 
-    // Minimax algorithm functions
-    function MiniMax(
-        Players[3][3] storage _board,
-        uint256 _depth,
-        bool _isMax
-    ) private returns (int256) {
-        Winners winner = calculateWinner(_board);
-        if (winner == Winners.PlayerOne) return 10;
-        if (winner == Winners.PlayerTwo) return -10;
-        if (winner == Winners.Draw) return 0;
-
-        int256 best;
-
-        if (_isMax) {
-            best = -1000;
-
-            for (uint8 i = 0; i < 3; i++) {
-                for (uint8 j = 0; j < 3; j++) {
-                    if (_board[i][j] == Players.None) {
-                        _board[i][j] == Players.PlayerOne;
-                        best = max(best, MiniMax(_board, _depth + 1, !_isMax));
-                        _board[i][j] = Players.None;
-                    }
-                }
-            }
-            return best;
-        } else {
-            best = 1000;
-
-            for (uint8 i = 0; i < 3; i++) {
-                for (uint8 j = 0; j < 3; j++) {
-                    if (_board[i][j] == Players.None) {
-                        _board[i][j] == Players.PlayerTwo;
-                        best = min(best, MiniMax(_board, _depth + 1, !_isMax));
-                        _board[i][j] = Players.None;
-                    }
-                }
-            }
-            return best;
-        }
-    }
-
     function findBestMoveX(
         Players[3][3] storage _board
-    ) private returns (uint8[2] memory _bestMove) {
-        int256 bestVal = -1000;
-        int256 moveVal;
+    ) private returns (uint8[2] memory) {
         uint8[2] memory bestMove;
+        int256 bestScore = int256(type(int).min);
+        int256 alpha = int256(type(int).min);
+        int256 beta = int256(type(int).max);
 
         for (uint8 i = 0; i < 3; i++) {
             for (uint8 j = 0; j < 3; j++) {
                 if (_board[i][j] == Players.None) {
                     _board[i][j] = Players.PlayerOne;
-
-                    moveVal = MiniMax(_board, 0, false);
-
+                    int256 score = alphabeta(_board, 9, alpha, beta, false);
                     _board[i][j] = Players.None;
 
-                    if (moveVal > bestVal) {
+                    if (score > bestScore) {
+                        bestScore = score;
                         bestMove[0] = i;
                         bestMove[1] = j;
-                        bestVal = moveVal;
                     }
+
+                    alpha = max(int(bestScore), int(alpha));
                 }
             }
         }
@@ -332,51 +286,113 @@ contract TicTacToe {
     function findBestMoveY(
         Players[3][3] storage _board
     ) private returns (uint8[2] memory) {
-        int256 bestVal = 1000;
-        int256 moveVal;
         uint8[2] memory bestMove;
+        int256 bestScore = int256(type(int).max);
+        int256 alpha = int256(type(int).min);
+        int256 beta = int256(type(int).max);
 
         for (uint8 i = 0; i < 3; i++) {
             for (uint8 j = 0; j < 3; j++) {
                 if (_board[i][j] == Players.None) {
                     _board[i][j] = Players.PlayerTwo;
-
-                    moveVal = MiniMax(_board, 0, true);
-
+                    int256 score = alphabeta(_board, 9, alpha, beta, true);
                     _board[i][j] = Players.None;
 
-                    if (moveVal < bestVal) {
+                    if (score < bestScore) {
+                        bestScore = score;
                         bestMove[0] = i;
                         bestMove[1] = j;
-                        bestVal = moveVal;
                     }
+
+                    alpha = max(int(bestScore), int(alpha));
                 }
             }
         }
         return bestMove;
     }
 
-    function makeMoveX(
-        // TODO duplicate functions will be deleted!
-        Game storage _game,
-        Players[3][3] storage _board
-    ) private returns (bool success, string memory reason) {
-        if (_game.playerTurn != Players.PlayerOne)
-            return (false, "Not first players turn");
-        uint8[2] memory move = findBestMoveX(_board);
-        _board[move[0]][move[1]] = Players.PlayerOne;
-        nextPlayer(_game);
-        return (true, "");
+    // alpha beta pruning
+    function alphabeta(
+        Players[3][3] memory state,
+        uint8 depth,
+        int256 alpha,
+        int256 beta,
+        bool isMaximizing
+    ) internal view returns (int256) {
+        if (
+            depth == 0 ||
+            calculateWinner(state) != Winners.None ||
+            isBoardFull(state)
+        ) {
+            return evaluate(state);
+        }
+
+        if (isMaximizing) {
+            int256 maxScore = int256(type(int).min);
+            for (uint8 i = 0; i < 3; i++) {
+                for (uint8 j = 0; j < 3; j++) {
+                    if (state[i][j] == Players.None) {
+                        Players[3][3] memory newState = state;
+                        newState[i][j] = Players.PlayerOne;
+                        int256 score = alphabeta(
+                            newState,
+                            depth - 1,
+                            alpha,
+                            beta,
+                            !isMaximizing
+                        );
+                        maxScore = int256(max(int(score), int(maxScore)));
+                        alpha = int256(max(int(maxScore), int(alpha)));
+                        if (beta <= alpha) {
+                            break;
+                        }
+                    }
+                }
+            }
+            return maxScore;
+        } else {
+            int256 minScore = int256(type(int).max);
+            for (uint8 i = 0; i < 3; i++) {
+                for (uint8 j = 0; j < 3; j++) {
+                    if (state[i][j] == Players.None) {
+                        Players[3][3] memory newState = state;
+                        newState[i][j] = Players.PlayerTwo;
+                        int256 score = alphabeta(
+                            newState,
+                            depth - 1,
+                            alpha,
+                            beta,
+                            !isMaximizing
+                        );
+                        minScore = int256(min(int(score), int(minScore)));
+                        beta = int256(min(int(minScore), int(beta)));
+                        if (beta <= alpha) {
+                            break;
+                        }
+                    }
+                }
+            }
+            return minScore;
+        }
+    }
+
+    function evaluate(
+        Players[3][3] memory state
+    ) internal pure returns (int256) {
+        Winners winner = calculateWinner(state);
+        if (winner == Winners.PlayerOne) return 10;
+        else if (winner == Winners.PlayerTwo) return -10;
+        else return 0;
     }
 
     function makeMoveY(
-        Game storage _game,
-        Players[3][3] storage _board
-    ) private returns (bool success, string memory reason) {
+        uint8 _gameID // !! temporarily public for testing
+    ) public returns (bool success, string memory reason) {
+        Game storage _game = games[_gameID - 1];
         if (_game.playerTurn != Players.PlayerTwo)
             return (false, "Not second players turn");
-        uint8[2] memory move = findBestMoveY(_board);
-        _board[move[0]][move[1]] = Players.PlayerTwo;
+        uint8[2] memory move = findBestMoveY(_game.board);
+        _game.board[move[0]][move[1]] = Players.PlayerTwo;
         nextPlayer(_game);
         return (true, "");
     }
