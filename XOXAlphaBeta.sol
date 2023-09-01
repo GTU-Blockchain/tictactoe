@@ -47,6 +47,7 @@ contract TicTacToe {
     event GameOver(uint256 gameId, Winners winner);
 
     function newGame(GameType _gameType) public returns (uint256 gameID) {
+        // this function returns gameID
         Game memory game;
         game.playerTurn = Players.PlayerOne;
         game.gameType = _gameType;
@@ -54,7 +55,6 @@ contract TicTacToe {
         if (game.gameType == GameType.ComputerVsComputer) {
             game.board[random(3)][random(3)] = Players.PlayerOne;
             game.playerTurn = Players.PlayerTwo;
-            game.playerTwo = address(1);
         }
 
         games[nrOfGames] = game;
@@ -91,6 +91,11 @@ contract TicTacToe {
 
         address player = msg.sender;
         Game storage game = games[_gameID - 1];
+
+        if (game.gameType == GameType.ComputerVsComputer)
+            return (false, "this game is compVScomp mode, you can't join");
+        else if (game.gameType == GameType.PlayerVsComputer)
+            game.playerTwo = address(1); // in player vs computer mode, people can't join to slot 2.
 
         // Assign the new player to slot 1 if it is still available.
         if (game.playerOne == address(0)) {
@@ -255,50 +260,39 @@ contract TicTacToe {
         }
     }
 
-    function findBestMoveX(
+    function findBestMove(
+        Game memory _game,
         Players[3][3] storage _board
     ) private returns (uint8[2] memory) {
+        bool isPlayerOne;
+        if (_game.playerTurn == Players.PlayerOne) isPlayerOne = true;
+        else isPlayerOne = false;
+
         uint8[2] memory bestMove;
-        int256 bestScore = int256(type(int).min);
+        int256 bestScore;
+        if (isPlayerOne) bestScore = int256(type(int).min);
+        else bestScore = int256(type(int).max);
+
         int256 alpha = int256(type(int).min);
         int256 beta = int256(type(int).max);
 
         for (uint8 i = 0; i < 3; i++) {
             for (uint8 j = 0; j < 3; j++) {
                 if (_board[i][j] == Players.None) {
-                    _board[i][j] = Players.PlayerOne;
-                    int256 score = alphabeta(_board, 9, alpha, beta, false);
+                    _board[i][j] = _game.playerTurn;
+                    int256 score = alphabeta(
+                        _board,
+                        9,
+                        alpha,
+                        beta,
+                        !isPlayerOne
+                    ); // false for player one, true for player two
                     _board[i][j] = Players.None;
 
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMove[0] = i;
-                        bestMove[1] = j;
-                    }
-
-                    alpha = max(int(bestScore), int(alpha));
-                }
-            }
-        }
-        return bestMove;
-    }
-
-    function findBestMoveY(
-        Players[3][3] storage _board
-    ) private returns (uint8[2] memory) {
-        uint8[2] memory bestMove;
-        int256 bestScore = int256(type(int).max);
-        int256 alpha = int256(type(int).min);
-        int256 beta = int256(type(int).max);
-
-        for (uint8 i = 0; i < 3; i++) {
-            for (uint8 j = 0; j < 3; j++) {
-                if (_board[i][j] == Players.None) {
-                    _board[i][j] = Players.PlayerTwo;
-                    int256 score = alphabeta(_board, 9, alpha, beta, true);
-                    _board[i][j] = Players.None;
-
-                    if (score < bestScore) {
+                    if (
+                        (isPlayerOne && (score > bestScore)) ||
+                        (!isPlayerOne && (score < bestScore))
+                    ) {
                         bestScore = score;
                         bestMove[0] = i;
                         bestMove[1] = j;
@@ -385,14 +379,14 @@ contract TicTacToe {
         else return 0;
     }
 
-    function makeMoveY(
+    function makeMoveAI(
         uint8 _gameID // !! temporarily public for testing
     ) public returns (bool success, string memory reason) {
         Game storage _game = games[_gameID - 1];
-        if (_game.playerTurn != Players.PlayerTwo)
-            return (false, "Not second players turn");
-        uint8[2] memory move = findBestMoveY(_game.board);
-        _game.board[move[0]][move[1]] = Players.PlayerTwo;
+        if (_game.gameType == GameType.PlayerVsPlayer)
+            return (false, "computer can't play in PvP mode");
+        uint8[2] memory move = findBestMove(_game, _game.board);
+        _game.board[move[0]][move[1]] = _game.playerTurn;
         nextPlayer(_game);
         return (true, "");
     }
