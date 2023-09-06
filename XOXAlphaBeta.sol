@@ -41,8 +41,8 @@ contract TicTacToe {
     event PlayerMadeMove(
         uint256 gameId,
         address player,
-        uint256 xCoordinate,
-        uint256 yCoordinate
+        uint8 xCoordinate,
+        uint8 yCoordinate
     );
     event GameOver(uint256 gameId, Winners winner);
 
@@ -53,6 +53,7 @@ contract TicTacToe {
         game.gameType = _gameType;
 
         if (game.gameType == GameType.ComputerVsComputer) {
+            // if gametype is compVScomp, it randomly does the first move. First move got to be random since compVScomp uses the same algorithm for every player. It prevents the game from being tied.
             game.board[random(3)][random(3)] = Players.PlayerOne;
             game.playerTurn = Players.PlayerTwo;
         }
@@ -62,13 +63,13 @@ contract TicTacToe {
 
         emit GameCreated(nrOfGames, msg.sender);
 
-        return nrOfGames;
+        return nrOfGames; // returns the game ID
     }
 
     function printBoard(
+        // it is for testing, it allows us to see the board
         uint256 _gameID
     ) public view returns (string[3][3] memory) {
-        // temporary function for checking the board
         Game memory game = games[_gameID - 1];
         string[3][3] memory str;
         for (uint256 i = 0; i < 3; i++) {
@@ -86,6 +87,7 @@ contract TicTacToe {
         uint256 _gameID
     ) public returns (bool success, string memory reason) {
         if (_gameID > nrOfGames) {
+            // ID control
             return (false, "No such game exists.");
         }
 
@@ -121,8 +123,8 @@ contract TicTacToe {
 
     function makeMove(
         uint256 _gameID,
-        uint256 _xCoordinate,
-        uint256 _yCoordinate
+        uint8 _xCoordinate,
+        uint8 _yCoordinate
     ) public returns (bool success, string memory reason) {
         if (_gameID > nrOfGames) return (false, "No such game exists.");
 
@@ -380,11 +382,15 @@ contract TicTacToe {
     }
 
     function makeMoveAI(
-        uint8 _gameID // !! temporarily public for testing
+        uint8 _gameID
     ) public returns (bool success, string memory reason) {
         Game storage _game = games[_gameID - 1];
         if (_game.gameType == GameType.PlayerVsPlayer)
             return (false, "computer can't play in PvP mode");
+        if (
+            _game.gameType == GameType.PlayerVsComputer &&
+            _game.playerTurn == Players.PlayerOne
+        ) return (false, "this is not AI's turn");
         uint8[2] memory move = findBestMove(_game, _game.board);
         _game.board[move[0]][move[1]] = _game.playerTurn;
         nextPlayer(_game);
@@ -393,6 +399,7 @@ contract TicTacToe {
 
     function random(uint256 number) private view returns (uint256) {
         return
+            // this function creates a random number within the range of given input via keccak256.
             uint256(
                 keccak256(
                     abi.encodePacked(
@@ -405,11 +412,13 @@ contract TicTacToe {
     }
 
     function max(int256 _a, int256 _b) private pure returns (int256 _c) {
+        // max function for integers
         if (_a > _b) return _a;
         else return _b;
     }
 
     function min(int256 _a, int256 _b) private pure returns (int256 _c) {
+        // min function for integers
         if (_a < _b) return _a;
         else return _b;
     }
