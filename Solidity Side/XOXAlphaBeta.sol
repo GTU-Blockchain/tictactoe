@@ -385,15 +385,29 @@ contract TicTacToe {
         uint8 _gameID
     ) public returns (bool success, string memory reason) {
         Game storage _game = games[_gameID - 1];
+
+        if (_game.winner != Winners.None)
+            return (false, "The game has already ended.");
+
         if (_game.gameType == GameType.PlayerVsPlayer)
             return (false, "computer can't play in PvP mode");
+
         if (
             _game.gameType == GameType.PlayerVsComputer &&
             _game.playerTurn == Players.PlayerOne
         ) return (false, "this is not AI's turn");
+
         uint8[2] memory move = findBestMove(_game, _game.board);
         _game.board[move[0]][move[1]] = _game.playerTurn;
         nextPlayer(_game);
+
+        Winners winner = calculateWinner(_game.board);
+        if (winner != Winners.None) {
+            _game.winner = winner;
+            emit GameOver(_gameID, winner);
+
+            return (true, "The game is over.");
+        }
         return (true, "");
     }
 
@@ -421,5 +435,9 @@ contract TicTacToe {
         // min function for integers
         if (_a < _b) return _a;
         else return _b;
+    }
+
+    function getGameState(uint8 _gameID) public view returns (uint8) {
+        return games[_gameID - 1].winner == Winners.None ? 0 : 1;
     }
 }
