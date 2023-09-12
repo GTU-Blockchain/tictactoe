@@ -10,10 +10,11 @@ load_dotenv()
 chain_id = 11155111
 public_key = os.getenv("PUBLIC_KEY")
 private_key = os.getenv("PRIVATE_KEY")
+alchemy_api_key = os.getenv("ALCHEMY_API_KEY")
 
 install_solc("0.8.12")
 
-with open("Solidity Side/XOXAlphaBeta.sol", "r") as file:
+with open("solidity-side/XOXAlphaBeta.sol", "r") as file:
     simple_storage_file = file.read()
 
 sol_file = compile_standard(
@@ -38,9 +39,7 @@ sol_bytecode = sol_file["contracts"]["XOXAlphaBeta.sol"]["TicTacToe"]["evm"][
 ]["object"]
 
 web3_connection = Web3(
-    Web3.HTTPProvider(
-        "https://eth-sepolia.g.alchemy.com/v2/" + os.getenv("ALCHEMY_API_KEY")
-    )
+    Web3.HTTPProvider("https://eth-sepolia.g.alchemy.com/v2/" + alchemy_api_key)
 )
 
 compiled_contract = web3_connection.eth.contract(abi=sol_abi, bytecode=sol_bytecode)
@@ -128,6 +127,12 @@ def getGameState(gameId):
     return getGameStateFunction
 
 
+def getBoard(gameId):  ## control function
+    getBoardFunction = compiled_contract.functions.printBoard(gameId).call()
+    for i in range(3):
+        print(getBoardFunction[i])
+
+
 ## if we have to wait for the transaction to be mined or increase nonce manually
 nonce_value += 1
 create_new_game(2)
@@ -136,3 +141,4 @@ create_new_game(2)
 while getGameState(1) != 1:
     nonce_value += 1
     make_move_ai(1)
+    getBoard(1)
