@@ -45,6 +45,7 @@ contract TicTacToe {
         uint8 yCoordinate
     );
     event GameOver(uint256 gameId, Winners winner);
+    event AIMoveMade(uint8 xCoordinate, uint8 yCoordinate);
 
     function newGame(GameType _gameType) public returns (uint256 gameID) {
         // this function returns gameID
@@ -158,7 +159,7 @@ contract TicTacToe {
 
     function getCurrentPlayer(
         Game memory _game
-    ) public pure returns (address player) {
+    ) private pure returns (address player) {
         if (_game.playerTurn == Players.PlayerOne) return _game.playerOne;
 
         if (_game.playerTurn == Players.PlayerTwo) return _game.playerTwo;
@@ -400,6 +401,7 @@ contract TicTacToe {
         uint8[2] memory move = findBestMove(_game, _game.board);
         _game.board[move[0]][move[1]] = _game.playerTurn;
         nextPlayer(_game);
+        emit AIMoveMade(move[0], move[1]);
 
         Winners winner = calculateWinner(_game.board);
         if (winner != Winners.None) {
