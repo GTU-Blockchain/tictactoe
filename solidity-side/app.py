@@ -3,11 +3,15 @@ import json
 from web3 import Web3
 import os
 from dotenv import load_dotenv
+import serial
+import time
+
+arduino = serial.Serial(port="COM4", baudrate=115200, timeout=0.1)
 
 load_dotenv()
 
 ## variables
-chain_id = 11155111
+chain_id = 11155111  ## sepolia test network chain id
 public_key = os.getenv("PUBLIC_KEY")
 private_key = os.getenv("PRIVATE_KEY")
 alchemy_api_key = os.getenv("ALCHEMY_API_KEY")
