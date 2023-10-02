@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 import serial
 import time
 
-arduino = serial.Serial(port="COM4", baudrate=115200, timeout=0.1)
+arduino = serial.Serial(
+    port="/dev/cu.usbserial-0001", baudrate=115200, timeout=0.1
+)  ## mac only
 
 load_dotenv()
 
@@ -162,15 +164,53 @@ def getBoard(gameId):  ## control function
         print(getBoardFunction[i])
 
 
+def coordinate_edit(xCoord, yCoord):
+    return (3 * xCoord) + yCoord + 1
+
+
+def coordinate_seperate(coord):
+    if coord == 9:
+        return (0, 0)
+    elif coord == 8:
+        return (0, 1)
+    elif coord == 7:
+        return (0, 2)
+    elif coord == 6:
+        return (1, 0)
+    elif coord == 5:
+        return (1, 1)
+    elif coord == 4:
+        return (1, 2)
+    elif coord == 3:
+        return (2, 0)
+    elif coord == 2:
+        return (2, 1)
+    elif coord == 1:
+        return (2, 2)
+
+
 ## if we have to wait for the transaction to be mined or increase nonce manually
 nonce_value += 1
-gameID = create_new_game(2)
+gameID = create_new_game(1)
 
 ## AI vs AI game
 while getGameState(gameID) != 1:
     nonce_value += 1
-    xCoord, yCoord, winner = make_move_ai(gameID)
-    print("AI move:", xCoord, yCoord)  ## !! for testing purposes
+    xCoordAI, yCoordAI, winner = make_move_ai(gameID)
+    coordEdit = coordinate_edit(xCoordAI, yCoordAI)
+    arduino.write(bytes(coordEdit, "utf-8"))
+    time.sleep(0.05)
     getBoard(gameID)
+
+## AI vs Player game
+# while getGameState(gameID) != 1:
+#     nonce_value += 1
+#     moveCoord = arduino.readline()
+#     xCoord, yCoord = coordinate_seperate(moveCoord)
+#     make_move(gameID, xCoord, yCoord)
+#     xCoordAI, yCoordAI, winner = make_move_ai(gameID)
+#     coordEdit = coordinate_edit(xCoordAI, yCoordAI)
+#     arduino.write(bytes(coordEdit, "utf-8"))
+#     getBoard(gameID)
 
 ## print("Winner:", winner) ## for testing purposes
