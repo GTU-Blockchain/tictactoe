@@ -175,23 +175,23 @@ def coordinate_edit(xCoord, yCoord):
 
 
 def coordinate_seperate(coord):
-    if coord == 9:
+    if coord == 1:
         return (0, 0)
-    elif coord == 8:
+    elif coord == 2:
         return (0, 1)
-    elif coord == 7:
+    elif coord == 3:
         return (0, 2)
-    elif coord == 6:
+    elif coord == 4:
         return (1, 0)
     elif coord == 5:
         return (1, 1)
-    elif coord == 4:
+    elif coord == 6:
         return (1, 2)
-    elif coord == 3:
+    elif coord == 7:
         return (2, 0)
-    elif coord == 2:
+    elif coord == 8:
         return (2, 1)
-    elif coord == 1:
+    elif coord == 9:
         return (2, 2)
 
 
