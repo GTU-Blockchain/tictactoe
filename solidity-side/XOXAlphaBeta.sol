@@ -34,6 +34,7 @@ contract TicTacToe {
     mapping(uint256 => Game) private games;
 
     uint256 nrOfGames;
+    uint256 randomCounter = 0;
 
     // Events
     event GameCreated(uint256 gameId, address creator);
@@ -46,6 +47,7 @@ contract TicTacToe {
     );
     event GameOver(uint256 gameId, Winners winner);
     event AIMoveMade(uint8 xCoordinate, uint8 yCoordinate);
+    event firstMoveAIvsAI(uint8 firstX, uint8 firstY);
 
     function newGame(GameType _gameType) public returns (uint256 gameID) {
         // this function returns gameID
@@ -55,8 +57,11 @@ contract TicTacToe {
 
         if (game.gameType == GameType.ComputerVsComputer) {
             // if gametype is compVScomp, it randomly does the first move. First move got to be random since compVScomp uses the same algorithm for every player. It prevents the game from being tied.
-            game.board[random(3)][random(3)] = Players.PlayerOne;
+            uint8 firstX = uint8(random(3));
+            uint8 firstY = uint8(random(3));
+            game.board[firstX][firstY] = Players.PlayerOne;
             game.playerTurn = Players.PlayerTwo;
+            emit firstMoveAIvsAI(firstX, firstY);
         }
 
         games[nrOfGames] = game;
@@ -413,7 +418,7 @@ contract TicTacToe {
         return (true, "");
     }
 
-    function random(uint256 number) private view returns (uint256) {
+    function random(uint256 number) private returns (uint256) {
         return
             // this function creates a random number within the range of given input via keccak256.
             uint256(
@@ -421,7 +426,8 @@ contract TicTacToe {
                     abi.encodePacked(
                         block.timestamp,
                         block.difficulty,
-                        msg.sender
+                        msg.sender,
+                        randomCounter++
                     )
                 )
             ) % number;

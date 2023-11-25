@@ -3,8 +3,8 @@ import json
 from web3 import Web3
 import os
 from dotenv import load_dotenv
-import serial
 import time
+import serial
 
 arduino = serial.Serial(
     port="/dev/cu.usbserial-0001", baudrate=115200, timeout=0.1
@@ -96,8 +96,13 @@ def create_new_game(GameMode):
         }
     )
     receipt = send_raw_transaction(newGameFunction)
+    print(receipt)  ## printing the receipt
     log = compiled_contract.events.GameCreated().process_receipt(receipt)
     gameID = log[0]["args"]["gameId"]
+    if GameMode == 2:
+        AIlog = compiled_contract.events.firstMoveAIvsAI().process_receipt(receipt)
+        coordX, coordY = AIlog[0]["args"]["firstX"], AIlog[0]["args"]["firstY"]
+        return int(gameID), coordX, coordY
     return int(gameID)
 
 
@@ -162,6 +167,7 @@ def getBoard(gameId):  ## control function
     getBoardFunction = compiled_contract.functions.printBoard(gameId).call()
     for i in range(3):
         print(getBoardFunction[i])
+    print("\n")
 
 
 def coordinate_edit(xCoord, yCoord):
@@ -189,28 +195,50 @@ def coordinate_seperate(coord):
         return (2, 2)
 
 
+def playAIvsAI(gameID, firstX, firstY):
+    global nonce_value
+    firstCoord = coordinate_edit(firstX, firstY)
+    arduino.write(bytes(firstCoord, "utf-8"))
+    time.sleep(2)
+    while getGameState(gameID) != 1:
+        nonce_value += 1
+        xCoordAI, yCoordAI, winner = make_move_ai(gameID)
+        coordEdit = coordinate_edit(xCoordAI, yCoordAI)
+        arduino.write(bytes(coordEdit, "utf-8"))
+        time.sleep(0.05)
+        getBoard(gameID)
+    return winner
+
+
+def playAIvsPlayer(gameID):
+    global nonce_value
+    while getGameState(gameID) != 1:
+        nonce_value += 1
+        moveCoord = arduino.readline()
+        xCoord, yCoord = coordinate_seperate(moveCoord)
+        make_move(gameID, xCoord, yCoord)
+        xCoordAI, yCoordAI, winner = make_move_ai(gameID)
+        coordEdit = coordinate_edit(xCoordAI, yCoordAI)
+        arduino.write(bytes(coordEdit, "utf-8"))
+        getBoard(gameID)
+    return winner
+
+
+def printWinner(winner):
+    if winner == 1 or winner == 2:
+        print(f"Winner is player {winner}!\n")
+    else:
+        print("Game is tie!\n")
+
+
 ## if we have to wait for the transaction to be mined or increase nonce manually
 nonce_value += 1
-gameID = create_new_game(1)
+gameType = 2  ## 0 for PlayerVsPlayer, 1 for AIVsPlayer, 2 for AIvsAI
 
-## AI vs AI game
-while getGameState(gameID) != 1:
-    nonce_value += 1
-    xCoordAI, yCoordAI, winner = make_move_ai(gameID)
-    coordEdit = coordinate_edit(xCoordAI, yCoordAI)
-    arduino.write(bytes(coordEdit, "utf-8"))
-    time.sleep(0.05)
-    getBoard(gameID)
+if gameType == 2:
+    gameID, firstX, firstY = create_new_game(gameType)
+else:
+    gameID = create_new_game(gameType)
 
-## AI vs Player game
-# while getGameState(gameID) != 1:
-#     nonce_value += 1
-#     moveCoord = arduino.readline()
-#     xCoord, yCoord = coordinate_seperate(moveCoord)
-#     make_move(gameID, xCoord, yCoord)
-#     xCoordAI, yCoordAI, winner = make_move_ai(gameID)
-#     coordEdit = coordinate_edit(xCoordAI, yCoordAI)
-#     arduino.write(bytes(coordEdit, "utf-8"))
-#     getBoard(gameID)
-
-## print("Winner:", winner) ## for testing purposes
+winner = playAIvsAI(gameID, firstX, firstY)
+printWinner(winner)
