@@ -143,16 +143,12 @@ void setup()
   tft.fillCircle(95, 40, 22, ST77XX_WHITE);
  tft.fillCircle(30, 50, 9, ST77XX_BLACK);
   tft.fillCircle(95, 50, 9, ST77XX_BLACK); aşağı efekti*/
-
   Serial.end();
 
   // put your setup code here, to run once:
   if (SERIAL_MONITOR_MODE)
   {
     Serial.begin(115200);
-    // Serial monitor start
-    // Print main menu
-
     Serial.println("--==MAIN MENU==--");
     Serial.println("==1== PvE");
     Serial.println("==2== AI vs AI");
@@ -166,13 +162,14 @@ void setup()
 
     // Ignore the hidden line end character the monitor is adding to the received character
     // React to user input
-    if ((user_input == '1'))
+    if (user_input == 1)
       startGamePvE();
-    else if (user_input == '2')
+    else if (user_input == 2)
       startGameAIvsAI();
     else
       Serial.println("Wrong input!");
   }
+  Serial.end();
 }
 
 void loop()
@@ -219,11 +216,13 @@ void startGamePvE()
     drawMove(coordinate);
     recordMove(coordinate);
     checkWinner(0);
+    delay(2000);
     yourTurnLCD();
 
-    while (!Serial.available()) // ! test it
+    while (!Serial.available())
       ;
     coordinate = Serial.readString().toInt();
+    delay(50);
     drawMove(coordinate + 10);
     recordMove(coordinate + 10);
     checkWinner(1);
@@ -233,8 +232,8 @@ void startGamePvE()
 
 void initializeGame()
 {
+  Serial.begin(115200);
   Serial.println("====GAME IS ON====");
-  tone(4, 3000, 250);
 
   // Clean text area
 
@@ -281,10 +280,13 @@ void initializeGame()
   drawFrame();
 
   delay(1000);
+  Serial.end();
+  Serial.begin(115200);
 }
 
 void yourTurnLCD()
 {
+  Serial.begin(115200);
   tft.initR(INITR_BLACKTAB);
   tft.fillScreen(ST77XX_BLACK);
   tft.fillCircle(30, 40, 22, ST77XX_WHITE);
@@ -296,6 +298,8 @@ void yourTurnLCD()
   tft.setCursor(35, 115);
   tft.print("SIRAN");
   delay(500);
+  Serial.end();
+  Serial.begin(115200);
 }
 
 void checkWinner(int player)
@@ -773,13 +777,10 @@ void attachServos()
 void goHome()
 {
   // initial servo location
-
   servo_lift.writeMicroseconds(800);
   servo_left.writeMicroseconds(1633);
   servo_right.writeMicroseconds(2289);
-  servo_lift.attach(LIFT_SERO_PIN);
-  servo_left.attach(LEFT_SERVO_PIN);
-  servo_right.attach(RIGHT_SERVO_PIN);
+  attachServos();
 
   lift(LIFT2 - 100); // Lift all the way up.
   drawTo(ERASER_X, ERASER_Y);

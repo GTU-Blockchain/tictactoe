@@ -6,9 +6,7 @@ from dotenv import load_dotenv
 import time
 import serial
 
-arduino = serial.Serial(
-    port="/dev/cu.usbserial-0001", baudrate=115200, timeout=0.1
-)  ## mac only
+arduino = serial.Serial(port="COM7", baudrate=115200, timeout=0.1)
 
 load_dotenv()
 
@@ -17,8 +15,8 @@ chain_id = 11155111  ## sepolia test network chain id
 public_key = os.getenv("PUBLIC_KEY")
 private_key = os.getenv("PRIVATE_KEY")
 alchemy_api_key = os.getenv("ALCHEMY_API_KEY")
-sol_file_path = "solidity-side/XOXAlphaBeta.sol"
-json_file_path = "solidity-side/compiled_code.json"
+sol_file_path = "XOXAlphaBeta.sol"
+json_file_path = "compiled_code.json"
 isContractUpdated = True  ## change to True if you want to recompile the contract
 
 install_solc("0.8.12")
@@ -36,14 +34,14 @@ else:
             "sources": {"XOXAlphaBeta.sol": {"content": simple_storage_file}},
             "settings": {
                 "outputSelection": {
-                    "*": {"*": ["abi", "metadata", "evm.bytecode", "evm.sourceMap"]}
+                    "": {"": ["abi", "metadata", "evm.bytecode", "evm.sourceMap"]}
                 }
             },
         },
         solc_version="0.8.12",
     )
 
-    with open("solidity-side/compiled_code.json", "w") as file:
+    with open("compiled_code.json", "w") as file:
         json.dump(sol_file, file)
 
 
@@ -131,14 +129,10 @@ def make_move(gameId, moveX, moveY):
         }
     )
     receipt = send_raw_transaction(makeMoveFunction)
-    is_valid = compiled_contract.events.isMoveValid().process_receipt(receipt)[
-        "isValid"
-    ]  ## ! find bool value
-    print(receipt)
-    if is_valid == "1":
-        return True
-    else:
-        return False
+    is_valid = compiled_contract.events.isMoveValid().process_receipt(receipt)[0][
+        "args"
+    ]["isValid"]
+    return is_valid
 
 
 ## make move AI function
@@ -153,6 +147,7 @@ def make_move_ai(gameId):
     )
     receipt = send_raw_transaction(makeMoveAI)
     move_made_log = compiled_contract.events.AIMoveMade().process_receipt(receipt)
+    print(move_made_log)
     xCoordinate, yCoordinate = (
         move_made_log[0]["args"]["xCoordinate"],
         move_made_log[0]["args"]["yCoordinate"],
@@ -204,33 +199,42 @@ def coordinate_seperate(coord):
 
 def playAIvsAI(gameID, firstX, firstY):
     global nonce_value
+    time.sleep(20)
     firstCoord = coordinate_edit(firstX, firstY)
-    arduino.write(bytes(firstCoord, "utf-8"))
-    time.sleep(2)
+    arduino.write(bytes(str(firstCoord), "utf-8"))
+    time.sleep(5)
     while getGameState(gameID) != 1:
         nonce_value += 1
         xCoordAI, yCoordAI, winner = make_move_ai(gameID)
         coordEdit = coordinate_edit(xCoordAI, yCoordAI)
-        arduino.write(bytes(coordEdit, "utf-8"))
+        arduino.write(bytes(str(coordEdit), "utf-8"))
         time.sleep(0.05)
         getBoard(gameID)
+    time.sleep(5)
     return winner
 
 
 def playAIvsPlayer(gameID):
     global nonce_value
+    nonce_value += 1
     join_game(gameID)
     while getGameState(gameID) != 1:
         nonce_value += 1
-        moveCoord = int(input("Type your move: "))
-        xCoord, yCoord = coordinate_seperate(moveCoord)
+        moveCoord = str(input("Type your move: "))
+        xCoord, yCoord = coordinate_seperate(int(moveCoord))
         if not make_move(gameID, xCoord, yCoord):
+            print("Wrong input!")
             continue
+        arduino.write(bytes(moveCoord, "utf-8"))
+        time.sleep(0.05)
         nonce_value += 1
+        time.sleep(2)
         xCoordAI, yCoordAI, winner = make_move_ai(gameID)
         coordEdit = coordinate_edit(xCoordAI, yCoordAI)
-        arduino.write(bytes(coordEdit, "utf-8"))
+        arduino.write(bytes(str(coordEdit), "utf-8"))
+        time.sleep(0.05)
         getBoard(gameID)
+    time.sleep(5)
     return winner
 
 
@@ -244,21 +248,24 @@ def printWinner(winner):
 ## if we have to wait for the transaction to be mined or increase nonce manually
 nonce_value += 1
 
-gameType = 0  ## initialize the variable
-while gameType != 1 and gameType != 2:
+gameType = ""  ## initialize the variable
+while gameType != "1" and gameType != "2":
     print("Welcome! Please select your choice: \n1) PvE\n2) AI vs AI\n")
-    gameType = int(input("Type: "))
+    gameType = str(input("Type: "))
 
 arduino.write(bytes(gameType, "utf-8"))
+time.sleep(0.05)
 
-if gameType == 2:
-    gameID, firstX, firstY = create_new_game(gameType)
+time.sleep(20)
+
+if gameType == "2":
+    gameID, firstX, firstY = create_new_game(int(gameType))
 else:
-    gameID = create_new_game(gameType)
+    gameID = create_new_game(int(gameType))
 
-if gameType == 1:
-    playAIvsPlayer(gameID)
-elif gameType == 2:
+if gameType == "1":
+    winner = playAIvsPlayer(gameID)
+elif gameType == "2":
     winner = playAIvsAI(gameID, firstX, firstY)
 
 printWinner(winner)
