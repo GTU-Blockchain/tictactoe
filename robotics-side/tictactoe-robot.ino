@@ -1,5 +1,3 @@
-// UMUT SATIR BLOCKCHAIN
-
 #define DRAW_HUMAN_MOVE false
 
 // If you don't have a remote control or IR receiver you can enable serial monitor instead
@@ -12,27 +10,33 @@
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 #include <SPI.h>
-const int LEFT_SERVO_PIN = 12;
-const int RIGHT_SERVO_PIN = 18;
-const int LIFT_SERO_PIN = 15;
+const int LEFT_SERVO_PIN = 26;
+const int RIGHT_SERVO_PIN = 27;
+const int LIFT_SERO_PIN = 25;
 
 Servo servo_lift;
 Servo servo_left;
 Servo servo_right;
 
 // LCD Pins
-#define TFT_CS 10
-#define TFT_RST 8 // Or set to -1 and connect to Arduino RESET pin
-#define TFT_DC 9
-// *** If the pen is not touching the board, this is the value you should play with ***
-const int Z_OFFSET = 550; // Lower value will lift the pen higher
+#define TFT_CS 19
+#define TFT_RST 21 // Or set to -1 and connect to Arduino RESET pin
+#define TFT_DC 3
+// * If the pen is not touching the board, this is the value you should play with *
+#define TFT_MOSI 23 // Data out
+#define TFT_SCLK 18 // Clock out
 
-//*** Other servo configurations, usually you will not need to touch those
+// For ST7735-based displays, we will use this call
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
+
+const int Z_OFFSET = 800; // Lower value will lift the pen higher
+
+//* Other servo configurations, usually you will not need to touch those
 int servoLift = 1500;
 const int LIFT0 = 950 + Z_OFFSET; // On drawing surface
 const int LIFT1 = 625 + Z_OFFSET; // Between numbers
 const int LIFT2 = 435 + Z_OFFSET; // Going towards sweeper
-const int LIFT_SPEED = 1800;      // Speed of lifting arm, lower number will increase speed.
+const int LIFT_SPEED = 1600;      // Speed of liftimg arm, lower number will increase speed.
 // Side servos calibration
 const int SERVO_LEFT_FACTOR = 690;
 const int SERVO_RIGHT_FACTOR = 690;
@@ -40,18 +44,18 @@ const int SERVO_RIGHT_FACTOR = 690;
 const int SERVO_LEFT_NULL = 1950; // eski değer 1950
 const int SERVO_RIGHT_NULL = 815;
 // Length of arms
-const float L1 = 35;
-const float L2 = 55.1;
-const float L3 = 13.2;
-const float L4 = 45;
+const float L1 = 58;   // 35
+const float L2 = 101;  // 55.1
+const float L3 = 13.2; // 13.2
+const float L4 = 91;   // 45
 // Origin points of left and right servos.
 const int O1X = 24;
 const int O1Y = -25;
 const int O2X = 49;
 const int O2Y = -25;
 // Home coordinates, where the eraser is.
-const volatile double ERASER_X = 0;
-const volatile double ERASER_Y = 47;
+const volatile double ERASER_X = -50;
+const volatile double ERASER_Y = 98;
 volatile double lastX = ERASER_X; // 75;
 volatile double lastY = ERASER_Y; // 47.5;
 
@@ -64,30 +68,118 @@ int board_values[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
 int empty_places = 9;
 
 int winner = -1;
+
 void setup()
 {
-  Serial.begin(115200);
 
-  startGame();
+  Serial.begin(115200);
+  Serial.println("====GAME IS ON====");
+  // LCD Setup and clear
+  // LCD Setup and clear
+  tft.initR(INITR_BLACKTAB);
+  tft.fillScreen(ST77XX_BLACK);
+
+  delay(1000); // Ekranda bir gecikme süresi ekleyin
+
+  // Daire çizimlerini kaldırıldı
+
+  // Yazıyı ekrana yazdır
+  tft.fillCircle(30, 50, 22, ST77XX_WHITE);
+  tft.fillCircle(95, 50, 22, ST77XX_WHITE);
+  delay(500);
+
+  tft.fillCircle(30, 50, 9, ST77XX_BLACK);
+  tft.fillCircle(95, 50, 9, ST77XX_BLACK);
+  delay(500);
+
+  tft.fillCircle(30, 50, 15, ST77XX_WHITE);
+  tft.fillCircle(95, 50, 15, ST77XX_WHITE);
+  delay(250);
+
+  tft.fillCircle(30, 50, 15, ST77XX_BLACK);
+  tft.fillCircle(95, 50, 15, ST77XX_BLACK);
+  delay(250);
+
+  tft.fillCircle(95, 50, 25, ST77XX_WHITE);
+  delay(250);
+
+  tft.fillCircle(95, 50, 15, ST77XX_BLACK);
+  delay(250);
+
+  tft.fillCircle(30, 50, 15, ST77XX_WHITE);
+  tft.fillCircle(95, 50, 15, ST77XX_WHITE);
+  delay(250);
+
+  tft.fillCircle(30, 50, 15, ST77XX_BLACK);
+  tft.fillCircle(95, 50, 15, ST77XX_BLACK);
+  delay(250);
+
+  delay(1000);
+
+  tft.fillScreen(ST77XX_BLACK); // Clear the screen
+
+  tft.setCursor(0, 0);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(2);
+  tft.setTextWrap(true);
+
+  tft.setCursor(37, 80);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(3);
+  tft.print("BEN");
+  tft.setTextSize(2);
+  tft.setCursor(10, 110);
+  tft.print("ROBOCHAIN");
+  tft.fillCircle(30, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(95, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(30, 40, 9, ST77XX_BLACK);
+  tft.fillCircle(95, 40, 9, ST77XX_BLACK);
+
+  /* tft.fillCircle(30, 40, 22, ST77XX_WHITE);
+   tft.fillCircle(95, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(30, 30, 9, ST77XX_BLACK);
+   tft.fillCircle(95, 30, 9, ST77XX_BLACK); yukarı efekti*/
+  /*tft.fillCircle(30, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(95, 40, 22, ST77XX_WHITE);
+ tft.fillCircle(30, 50, 9, ST77XX_BLACK);
+  tft.fillCircle(95, 50, 9, ST77XX_BLACK); aşağı efekti*/
+  Serial.end();
+
+  // put your setup code here, to run once:
+  if (SERIAL_MONITOR_MODE)
+  {
+    Serial.begin(115200);
+    Serial.println("--==MAIN MENU==--");
+    Serial.println("==1== PvE");
+    Serial.println("==2== AI vs AI");
+
+    // We just wait until there is an input
+    while (Serial.available() == 0)
+      ;
+
+    // Get the value user entered
+    int user_input = Serial.readString().toInt();
+
+    // Ignore the hidden line end character the monitor is adding to the received character
+    // React to user input
+    if (user_input == 1)
+      startGamePvE();
+    else if (user_input == 2)
+      startGameAIvsAI();
+    else
+      Serial.println("Wrong input!");
+  }
+  Serial.end();
 }
 
 void loop()
 {
   // put your main code here, to run repeatedly:
 }
-void startGame()
+
+void startGameAIvsAI()
 {
-  Serial.println("====GAME IS ON====");
-  tone(4, 3000, 250);
-
-  // Clean text area
-  Serial.println("Erasing");
-  erase();
-
-  Serial.println("Drawing Frame");
-  drawFrame();
-
-  delay(1000);
+  initializeGame();
 
   int coordinate, counter = 0;
 
@@ -106,6 +198,108 @@ void startGame()
     counter++;
   }
   goHome();
+}
+
+void startGamePvE()
+{
+  initializeGame();
+
+  int coordinate;
+
+  while ((winner == -1) && (empty_places > 0))
+  {
+    while (!Serial.available())
+      ;
+    coordinate = Serial.readString().toInt();
+    delay(50);
+    Serial.println(coordinate);
+    drawMove(coordinate);
+    recordMove(coordinate);
+    checkWinner(0);
+    delay(2000);
+    yourTurnLCD();
+
+    while (!Serial.available())
+      ;
+    coordinate = Serial.readString().toInt();
+    delay(50);
+    drawMove(coordinate + 10);
+    recordMove(coordinate + 10);
+    checkWinner(1);
+  }
+  goHome();
+}
+
+void initializeGame()
+{
+  Serial.begin(115200);
+  Serial.println("====GAME IS ON====");
+
+  // Clean text area
+
+  tft.initR(INITR_BLACKTAB);
+  tft.fillScreen(ST77XX_BLACK);
+  tft.fillCircle(30, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(95, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(30, 40, 9, ST77XX_BLACK);
+  tft.fillCircle(95, 40, 9, ST77XX_BLACK);
+  // Print
+  tft.setCursor(40, 90);
+  tft.print("OYUN");
+  tft.setCursor(20, 115);
+  tft.print("BASLASIN");
+
+  delay(2000);
+  tft.initR(INITR_BLACKTAB);
+  tft.fillScreen(ST77XX_BLACK);
+  // ERESE
+  tft.fillCircle(30, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(95, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(30, 50, 9, ST77XX_BLACK);
+  tft.fillCircle(95, 50, 9, ST77XX_BLACK);
+  tft.setCursor(35, 90);
+  tft.print("TAHTA");
+  tft.setCursor(13, 115);
+  tft.print("SILINIYOR");
+  delay(500);
+  Serial.println("Erasing");
+  erase();
+  tft.initR(INITR_BLACKTAB);
+  tft.fillScreen(ST77XX_BLACK);
+  // ERESE
+  tft.fillCircle(30, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(95, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(30, 50, 9, ST77XX_BLACK);
+  tft.fillCircle(95, 50, 9, ST77XX_BLACK);
+  tft.setCursor(35, 90);
+  tft.print("CIZIM");
+  tft.setCursor(13, 115);
+  tft.print("YAPILIYOR");
+  delay(500);
+  Serial.println("Drawing Frame");
+  drawFrame();
+
+  delay(1000);
+  Serial.end();
+  Serial.begin(115200);
+}
+
+void yourTurnLCD()
+{
+  Serial.begin(115200);
+  tft.initR(INITR_BLACKTAB);
+  tft.fillScreen(ST77XX_BLACK);
+  tft.fillCircle(30, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(95, 40, 22, ST77XX_WHITE);
+  tft.fillCircle(30, 50, 9, ST77XX_BLACK);
+  tft.fillCircle(95, 50, 9, ST77XX_BLACK);
+  tft.setCursor(35, 90);
+  tft.print("SENIN");
+  tft.setCursor(35, 115);
+  tft.print("SIRAN");
+  delay(500);
+  Serial.end();
+  Serial.begin(115200);
 }
 
 void checkWinner(int player)
@@ -200,6 +394,42 @@ void checkWinnerDiag(int diag, int player)
   }
 }
 
+void replyMove()
+{
+  //========= Reply move ======
+  // We will generate a random number from 1 to the number of empty places
+  // We will then go over the array and count the empty places we meet until we get to the needed place
+  // If there are 3 empty places and the trandom number will be 2 , this means we will make a move at the second empty place we find
+
+  int randEmptyPlace = random(empty_places) + 1;
+  // Debugging
+  /*
+    Serial.println("============================");
+    Serial.print("Empty Spaces:");
+    Serial.println(empty_places);
+    Serial.print("Replying to randEmptyPlace: ");
+    Serial.println(randEmptyPlace);
+    Serial.println("============================");
+  */
+  // Loop until we find an empty place
+  int emptyPlacesFound = 0;
+
+  for (int i = 0; i < 9; i++)
+  {
+    if (board_values[i] == -1)
+    {
+      // We found an empty place
+      emptyPlacesFound++;
+      if (emptyPlacesFound == randEmptyPlace)
+      {
+        drawMove(i + 1);
+        recordMove(i + 1);
+        Serial.print("Replying to: ");
+        Serial.println(i + 1);
+      }
+    }
+  }
+}
 void recordMove(int move)
 {
   if ((move >= 1) && (move <= 9))
@@ -213,7 +443,6 @@ void recordMove(int move)
     empty_places--;
   }
 }
-
 void drawMove(int move)
 {
   attachServos();
@@ -223,84 +452,84 @@ void drawMove(int move)
     drawFrame();
     break;
   case 1:
-    drawX(50, 20);
+    drawX(60, 40);
     break;
 
   case 2:
-    drawX(34.5, 25);
+    drawX(38, 38);
     break;
 
   case 3:
-    drawX(15, 25);
+    drawX(7, 40);
     break;
 
   case 4:
-    drawX(50, 35);
+    drawX(65, 60);
     break;
 
   case 5:
-    drawX(34.5, 38);
+    drawX(40, 60);
     break;
 
   case 6:
-    drawX(15, 35);
+    drawX(7, 60);
     break;
 
   case 7:
-    drawX(48, 47);
+    drawX(65, 80);
     break;
 
   case 8:
-    drawX(34.5, 50);
+    drawX(40, 80);
+    ;
     break;
 
   case 9:
-    drawX(15, 50);
+    drawX(7, 80);
     break;
-
   case 11:
-    drawZero(50, 10);
+    drawZero(65, 40);
     break;
 
   case 12:
-    drawZero(30, 10);
+    drawZero(33, 38);
     break;
 
   case 13:
-    drawZero(15, 10);
+    drawZero(5, 40);
     break;
 
   case 14:
-    drawZero(50, 25);
+    drawZero(65, 60);
     break;
 
   case 15:
-    drawZero(30, 25);
+    drawZero(35, 60);
     break;
 
   case 16:
-    drawZero(15, 25);
+    drawZero(5, 60);
     break;
 
   case 17:
-    drawZero(50, 40);
+    drawZero(65, 80);
     break;
 
   case 18:
-    drawZero(30, 40);
+    drawZero(35, 80);
     break;
 
   case 19:
-    drawZero(15, 40);
+    drawZero(5, 80);
     break;
 
   case 99:
-    drawTo(5, 0);
+    drawTo(ERASER_X + 20, ERASER_Y - 10);
     break;
   }
   // Get out of the way
   lift(LIFT2);
-  drawTo(10, 10);
+  drawTo(ERASER_X, ERASER_Y);
   detachServos();
 }
 
@@ -308,25 +537,33 @@ void erase()
 {
   goHome();
   attachServos();
-  lift(LIFT0); // Go down, just before doing the erase movements.
-  drawTo(70, ERASER_Y);
-  drawTo(5, ERASER_Y);
 
-  drawTo(70, 34);
-  drawTo(0, 34);
-  drawTo(70, 34);
+  lift(LIFT0 + 200); // Go down, just before doing the erase movements.
 
-  drawTo(0, 26);
-  drawTo(70, 20);
+  drawTo(-25, 90); // bunuu elleme
+  drawTo(100, 90);
 
-  drawTo(0, 20);
-  drawTo(70, 5);
+  drawTo(-45, 80);
+  drawTo(100, 80);
 
-  drawTo(10, 15);
-  drawTo(40, 30);
+  drawTo(-45, 70);
+  drawTo(100, 70);
 
+  drawTo(-45, 60);
+  drawTo(100, 60);
+
+  drawTo(-45, 50);
+  drawTo(100, 50);
+
+  drawTo(-45, 40);
+  drawTo(100, 40);
+
+  drawTo(-45, 40);
+  drawTo(100, 40);
+
+  drawTo(-25, 90);
   drawTo(ERASER_X, ERASER_Y);
-  lift(LIFT2 + 800);
+  lift(LIFT2);
 
   detachServos();
 }
@@ -480,22 +717,28 @@ void drawFrame()
   attachServos();
   lift(LIFT2);
   delay(1000);
+  /*
+  drawTo(-25,90);//bunuu elleme
+  drawTo(100,90);
 
+  drawTo(-45,80);
+  drawTo(100,80);
+  */
   //===VERTICAL
   // Go
-  drawTo(21, 15);
+  drawTo(50, 90);
   delay(500);
   // Draw
-  lift(LIFT0);
-  drawTo(23, 60);
+  lift(LIFT0 + 200);
+  drawTo(50, 40);
   delay(250);
   lift(LIFT2);
   // Go
-  drawTo(47, 15);
+  drawTo(20, 90);
   delay(500);
   // Draw
-  lift(LIFT0);
-  drawTo(45, 60);
+  lift(LIFT0 + 200);
+  drawTo(20, 40);
   delay(250);
   lift(LIFT2);
 
@@ -503,24 +746,25 @@ void drawFrame()
 
   // Go
   delay(250);
-  drawTo(5, 28);
+  drawTo(0, 73);
 
   // Draw
-  lift(LIFT0);
+  lift(LIFT0 + 200);
   delay(300);
-  drawTo(67, 32);
+  drawTo(80, 73);
   delay(300);
   lift(LIFT2);
 
   // Go
-  drawTo(5, 45);
+  drawTo(0, 53);
 
   // Draw
-  lift(LIFT0);
+  lift(LIFT0 + 200);
   delay(300);
-  drawTo(67, 45);
+  drawTo(80, 53);
   delay(300);
   lift(LIFT2);
+  drawTo(ERASER_X, ERASER_Y);
 
   detachServos();
 }
@@ -533,13 +777,10 @@ void attachServos()
 void goHome()
 {
   // initial servo location
-
   servo_lift.writeMicroseconds(800);
   servo_left.writeMicroseconds(1633);
   servo_right.writeMicroseconds(2289);
-  servo_lift.attach(LIFT_SERO_PIN);
-  servo_left.attach(LEFT_SERVO_PIN);
-  servo_right.attach(RIGHT_SERVO_PIN);
+  attachServos();
 
   lift(LIFT2 - 100); // Lift all the way up.
   drawTo(ERASER_X, ERASER_Y);

@@ -48,6 +48,7 @@ contract TicTacToe {
     event GameOver(uint256 gameId, Winners winner);
     event AIMoveMade(uint8 xCoordinate, uint8 yCoordinate);
     event firstMoveAIvsAI(uint8 firstX, uint8 firstY);
+    event isMoveValid(bool isValid);
 
     function newGame(GameType _gameType) public returns (uint256 gameID) {
         // this function returns gameID
@@ -132,28 +133,37 @@ contract TicTacToe {
         uint8 _xCoordinate,
         uint8 _yCoordinate
     ) public returns (bool success, string memory reason) {
-        if (_gameID > nrOfGames) return (false, "No such game exists.");
+        if (_gameID > nrOfGames) {
+            emit isMoveValid(false);
+            return (false, "No such game exists.");
+        }
 
         Game storage game = games[_gameID - 1];
 
-        if (game.winner != Winners.None)
+        if (game.winner != Winners.None) {
+            emit isMoveValid(false);
             return (false, "The game has already ended.");
+        }
 
-        if (msg.sender != getCurrentPlayer(game))
+        if (msg.sender != getCurrentPlayer(game)) {
+            emit isMoveValid(false);
             return (false, "It is not your turn.");
+        }
 
-        if (game.board[_xCoordinate][_yCoordinate] != Players.None)
+        if (game.board[_xCoordinate][_yCoordinate] != Players.None) {
+            emit isMoveValid(false);
             return (false, "There is already a mark at the given coordinates.");
+        }
 
         game.board[_xCoordinate][_yCoordinate] = game.playerTurn;
 
         emit PlayerMadeMove(_gameID, msg.sender, _xCoordinate, _yCoordinate);
+        emit isMoveValid(true);
 
         Winners winner = calculateWinner(game.board);
         if (winner != Winners.None) {
             game.winner = winner;
             emit GameOver(_gameID, winner);
-
             return (true, "The game is over.");
         }
 
