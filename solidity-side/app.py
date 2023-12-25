@@ -131,7 +131,14 @@ def make_move(gameId, moveX, moveY):
         }
     )
     receipt = send_raw_transaction(makeMoveFunction)
+    is_valid = compiled_contract.events.isMoveValid().process_receipt(receipt)[
+        "isValid"
+    ]  ## ! find bool value
     print(receipt)
+    if is_valid == "1":
+        return True
+    else:
+        return False
 
 
 ## make move AI function
@@ -212,11 +219,14 @@ def playAIvsAI(gameID, firstX, firstY):
 
 def playAIvsPlayer(gameID):
     global nonce_value
+    join_game(gameID)
     while getGameState(gameID) != 1:
         nonce_value += 1
-        moveCoord = arduino.readline()
+        moveCoord = int(input("Type your move: "))
         xCoord, yCoord = coordinate_seperate(moveCoord)
-        make_move(gameID, xCoord, yCoord)
+        if not make_move(gameID, xCoord, yCoord):
+            continue
+        nonce_value += 1
         xCoordAI, yCoordAI, winner = make_move_ai(gameID)
         coordEdit = coordinate_edit(xCoordAI, yCoordAI)
         arduino.write(bytes(coordEdit, "utf-8"))
@@ -233,12 +243,22 @@ def printWinner(winner):
 
 ## if we have to wait for the transaction to be mined or increase nonce manually
 nonce_value += 1
-gameType = 2  ## 0 for PlayerVsPlayer, 1 for AIVsPlayer, 2 for AIvsAI
+
+gameType = 0  ## initialize the variable
+while gameType != 1 and gameType != 2:
+    print("Welcome! Please select your choice: \n1) PvE\n2) AI vs AI\n")
+    gameType = int(input("Type: "))
+
+arduino.write(bytes(gameType, "utf-8"))
 
 if gameType == 2:
     gameID, firstX, firstY = create_new_game(gameType)
 else:
     gameID = create_new_game(gameType)
 
-winner = playAIvsAI(gameID, firstX, firstY)
+if gameType == 1:
+    playAIvsPlayer(gameID)
+elif gameType == 2:
+    winner = playAIvsAI(gameID, firstX, firstY)
+
 printWinner(winner)
