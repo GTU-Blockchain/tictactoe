@@ -25,8 +25,10 @@ We are still optimizing and debugging the code to develop the project. Improveme
 
 **Software Team**
 - [@umutsatir](https://www.github.com/umutsatir)
+- [@Trem6](https://www.github.com/Trem6)
 
 **Hardware Team**
+- [@tylerdurdeenn](https://www.github.com/tylerdurdeenn)
 
 ## Deployment
 
