@@ -20,8 +20,13 @@ We are still optimizing and debugging the code to develop the project. Improveme
 
 
 ## Authors
+**Mentor**
+- [@selcuktopal80](https://www.github.com/selcuktopal80)
 
+**Software Team**
 - [@umutsatir](https://www.github.com/umutsatir)
+
+**Hardware Team**
 
 ## Deployment
 
