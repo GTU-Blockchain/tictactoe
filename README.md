@@ -27,7 +27,7 @@ We are still optimizing and debugging the code to develop the project. Improveme
 
 To deploy this project run:
 
-You need to upload the Arduino code to ESP32. Then edit the python code (ports and wallet addresses) and run it.
+You need to upload the Arduino code to ESP32. Then edit the python code (ESP32 port) and .env file (wallet addresses). Lastly, run the Python code.
 
 ## Roadmap
 
