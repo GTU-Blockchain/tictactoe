@@ -19,23 +19,6 @@ Finally, all things were working. We started to optimize the code. The improveme
 We are still optimizing and debugging the code to develop the project. Improvements will be added.
 
 
-## Authors
-**Mentor**
-- [@selcuktopal80](https://www.github.com/selcuktopal80)
 
-**Software Team**
-- [@umutsatir](https://www.github.com/umutsatir)
-- [@Trem6](https://www.github.com/Trem6)
-
-**Hardware Team**
-- [@tylerdurdeenn](https://www.github.com/tylerdurdeenn)
-
-## Deployment
-
-To deploy this project run:
-
-You need to upload the Arduino code to ESP32. Then edit the python code (ESP32 port) and .env file (wallet addresses). Lastly, run the Python code.
-
-## Roadmap
 
 - C++ has no Web3 library now. When it is created, C++ Web3 library will be used instead of Python
